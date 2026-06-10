@@ -1,0 +1,5 @@
+def f ( * args , ** kwargs ) : <EOL>
+<INDENT>
+pass <EOL>
+<OUTDENT>
+( 1 , 2 ) ( ** { } ) <EOL>

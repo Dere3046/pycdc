@@ -1931,6 +1931,14 @@ PycRef<ASTNode> BuildFromCode(PycRef<PycCode> code, PycModule* mod)
                 }
             }
             break;
+        case Pyc::JUMP_IF_NOT_EXC_MATCH_A:
+            {
+                PycRef<ASTNode> right = stack.top();
+                stack.pop();
+                PycRef<ASTNode> left = stack.top();
+                stack.pop();
+            }
+            break;
         case Pyc::RERAISE:
         case Pyc::RERAISE_A:
             /* Python 3.11 cleanup opcode. */
@@ -2690,6 +2698,74 @@ PycRef<ASTNode> BuildFromCode(PycRef<PycCode> code, PycModule* mod)
             {
                 PycRef<ASTNode> value = stack.top(operand);
                 stack.push(value);
+            }
+            break;
+        case Pyc::LOAD_ASSERTION_ERROR:
+            {
+                stack.push(PycRef<ASTNode>());
+            }
+            break;
+        case Pyc::LIST_TO_TUPLE:
+            {
+                PycRef<ASTNode> value = stack.top();
+                stack.pop();
+                stack.push(value);
+            }
+            break;
+        case Pyc::CALL_FUNCTION_EX_A:
+            {
+                bool has_kwargs = (operand & 1);
+                bool has_args = (operand & 2);
+
+                PycRef<ASTNode> kwargs_node;
+                PycRef<ASTNode> args_node;
+
+                if (has_kwargs) {
+                    kwargs_node = stack.top();
+                    stack.pop();
+                }
+                if (has_args) {
+                    args_node = stack.top();
+                    stack.pop();
+                }
+
+                PycRef<ASTNode> func = stack.top();
+                stack.pop();
+
+                ASTCall::pparam_t pparams;
+                ASTCall::kwparam_t kwparams;
+                PycRef<ASTNode> call = new ASTCall(func, pparams, kwparams);
+
+                if (has_args) {
+                    call.cast<ASTCall>()->setVar(args_node);
+                }
+                if (has_kwargs) {
+                    call.cast<ASTCall>()->setKW(kwargs_node);
+                }
+
+                stack.push(call);
+            }
+            break;
+        case Pyc::DICT_MERGE_A:
+            {
+                stack.pop();
+            }
+            break;
+        case Pyc::DICT_UPDATE_A:
+            {
+                stack.pop();
+            }
+            break;
+        // MAP_ADD and SET_ADD require comprehension AST reconstruction
+        case Pyc::UNPACK_EX_A:
+            {
+                int before = operand & 0xFF;
+                int after = (operand >> 8) & 0xFF;
+                unpack = before + 1 + after;
+                if (unpack > 0) {
+                    ASTTuple::value_t vals;
+                    stack.push(new ASTTuple(vals));
+                }
             }
             break;
         default:

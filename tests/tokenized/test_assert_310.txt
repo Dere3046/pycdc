@@ -1,0 +1,4 @@
+x = 1 <EOL>
+if not x > 0 : <EOL>
+<INDENT>
+raise None <EOL>
